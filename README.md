@@ -33,6 +33,17 @@ npm install
 
 ### Setup Environment Variables
 
+Github token is required for all operations.
+To create api token follow the [link](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token).
+
+#### Minimum required scopes are:
+- repo
+- admin:org
+- admin:repo_hook
+- admin:org_hook
+- admin:org_hook
+
+
 Create a `.env` file based on the provided template:
 
 ```bash
