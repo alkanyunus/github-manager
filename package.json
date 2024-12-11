@@ -1,0 +1,20 @@
+{
+  "name": "github-manager",
+  "version": "1.0.0",
+  "description": "GitHub Actions secrets and environment manager",
+  "license": "SEE LICENSE IN LICENSE",
+  "author": "Yunus Alkan",
+  "type": "module",
+  "scripts": {
+    "create-repo": "node src/scripts/createRepo.js",
+    "validate-token": "node src/scripts/validateToken.js",
+    "add-secrets": "node src/scripts/addSecrets.js",
+    "delete-repo": "node src/scripts/deleteRepo.js",
+    "list-repos": "node src/scripts/listRepos.js"
+  },
+  "dependencies": {
+    "@octokit/rest": "^19.0.7",
+    "libsodium-wrappers": "^0.7.11",
+    "dotenv": "^16.0.3"
+  }
+} 
