@@ -8,7 +8,7 @@ dotenv.config();
 const DEFAULT_ORG = process.env.DEFAULT_ORG;
 const DEFAULT_TEMPLATE = process.env.DEFAULT_TEMPLATE;
 
-async function createRepo(repoName, orgName = DEFAULT_ORG, template = DEFAULT_UNITY_TEMPLATE) {
+async function createRepo(repoName, orgName = DEFAULT_ORG, template = DEFAULT_TEMPLATE) {
     const githubManager = new GitHubManager(
         process.env.GITHUB_TOKEN || '',
         getCommonSecrets(),

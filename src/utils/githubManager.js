@@ -60,75 +60,63 @@ export class GitHubManager {
     async createRepository(owner, name, isPrivate = true, template = null) {
         try {
             let response;
-            
-            if (template && template !== 'none') {
-                // Create from template
-                const templateOwner = typeof template === 'object' ? template.owner : owner;
-                const templateRepo = typeof template === 'object' ? template.repo : template;
-                
-                console.log(`Using template: ${templateOwner}/${templateRepo}`);
 
-                // First, verify template exists and is accessible
-                try {
-                    await this.octokit.repos.get({
-                        owner: templateOwner,
-                        repo: templateRepo
-                    });
-                } catch (error) {
-                    if (error.status === 404) {
-                        throw new Error(`Template repository ${templateOwner}/${templateRepo} not found`);
-                    }
-                    throw error;
-                }
-
-                // Create from template using POST request
-                response = await this.octokit.request('POST /repos/{template_owner}/{template_repo}/generate', {
-                    template_owner: templateOwner,
-                    template_repo: templateRepo,
-                    owner: owner,
-                    name: name,
-                    description: `Created from template: ${templateOwner}/${templateRepo}`,
-                    private: isPrivate,
-                    include_all_branches: true,
-                    headers: {
-                        accept: 'application/vnd.github.baptiste-preview+json'
-                    }
-                });
-                console.log('✅ Repository created from template');
-            } else {
-                // Create empty repository
-                console.log('📋 Creating empty repository');
-                response = await this.octokit.repos.createInOrg({
-                    org: owner,
+            // If no owner is specified, create a personal repository
+            if (!owner) {
+                console.log('📋 Creating personal repository...');
+                response = await this.octokit.repos.createForAuthenticatedUser({
                     name,
                     private: isPrivate,
                     auto_init: true,
                 });
-                console.log('✅ Repository created');
-            }
+            } else {
+                // Create from template if specified
+                if (template && template !== 'none') {
+                    const templateOwner = typeof template === 'object' ? template.owner : owner;
+                    const templateRepo = typeof template === 'object' ? template.repo : template;
 
-            console.log('🔧 Setting up secrets and variables...');
-            await this.setupCommonSecrets(owner, name);
-            await this.setupCommonVariables(owner, name);
+                    console.log(`Using template: ${templateOwner}/${templateRepo}`);
+
+                    // Verify template exists
+                    await this.octokit.repos.get({
+                        owner: templateOwner,
+                        repo: templateRepo
+                    });
+
+                    // Create from template
+                    response = await this.octokit.request('POST /repos/{template_owner}/{template_repo}/generate', {
+                        template_owner: templateOwner,
+                        template_repo: templateRepo,
+                        owner: owner,
+                        name: name,
+                        description: `Created from template: ${templateOwner}/${templateRepo}`,
+                        private: isPrivate,
+                        include_all_branches: true,
+                        headers: {
+                            accept: 'application/vnd.github.baptiste-preview+json'
+                        }
+                    });
+                    console.log('✅ Repository created from template');
+
+                    console.log('🔧 Setting up secrets and variables...');
+                    await this.setupCommonSecrets(owner, name);
+                    await this.setupCommonVariables(owner, name);
+        
+                } else {
+                    // Create empty repository in the specified organization
+                    console.log('📋 Creating empty repository in organization...');
+                    response = await this.octokit.repos.createInOrg({
+                        org: owner,
+                        name,
+                        private: isPrivate,
+                        auto_init: true,
+                    });
+                }
+            }
 
             return response.data;
         } catch (error) {
-            if (error.status === 404) {
-                console.error('❌ Repository creation failed');
-                console.error('💡 Make sure:');
-                console.error('   1. The organization exists:', owner);
-                console.error('   2. The template repository exists:', template);
-                console.error('   3. Your token has access to both organizations');
-                console.error('   4. The repository is marked as a template');
-            } else if (error.status === 422) {
-                console.error('❌ Repository creation failed');
-                console.error('💡 The repository might not be marked as a template');
-                console.error('   Go to repository settings and enable "Template repository"');
-            } else {
-                console.error('❌ Error creating repository:', error.message);
-                console.error('   Status:', error.status);
-                console.error('   Response:', error.response?.data?.message || 'No additional details');
-            }
+            console.error('❌ Error creating repository:', error.message);
             throw error;
         }
     }
@@ -243,31 +231,24 @@ export class GitHubManager {
         }
     }
 
-    async deleteRepository(owner, name) {
+    async deleteRepository(owner, repoName) {
         try {
-            console.log(`🗑️  Deleting repository: ${owner}/${name}`);
-            
-            // Verify repository exists
-            try {
-                await this.octokit.repos.get({
-                    owner,
-                    repo: name
+            if (!owner) {
+                // Delete personal repository
+                console.log(`🗑️ Deleting personal repository: ${repoName}`);
+                await this.octokit.repos.delete({
+                    owner: 'your_username', // Replace with the authenticated user's username
+                    repo: repoName
                 });
-            } catch (error) {
-                if (error.status === 404) {
-                    throw new Error(`Repository ${owner}/${name} not found`);
-                }
-                throw error;
+            } else {
+                // Delete organization repository
+                console.log(`🗑️ Deleting organization repository: ${owner}/${repoName}`);
+                await this.octokit.repos.delete({
+                    owner,
+                    repo: repoName
+                });
             }
-
-            // Delete repository
-            await this.octokit.repos.delete({
-                owner,
-                repo: name
-            });
-            
             console.log('✅ Repository deleted successfully');
-            return true;
         } catch (error) {
             if (error.status === 404) {
                 console.error('❌ Repository not found');
@@ -281,13 +262,20 @@ export class GitHubManager {
         }
     }
 
-    async listRepositories(orgName) {
+     async listRepositories(orgName) {
         try {
-            const response = await this.octokit.repos.listForOrg({
-                org: orgName,
-                type: 'all', // Can be 'all', 'public', 'private', 'forks', 'sources', 'member'
-            });
-            return response.data;
+            if (orgName) {
+                const response = await this.octokit.repos.listForOrg({
+                    org: orgName,
+                    type: 'all', // Can be 'all', 'public', 'private', 'forks', 'sources', 'member'
+                });
+                return response.data;
+            } else {
+                const response = await this.octokit.repos.listForAuthenticatedUser({
+                    type: 'all',
+                });
+                return response.data;
+            }
         } catch (error) {
             console.error('Error fetching repositories:', error);
             throw error;
