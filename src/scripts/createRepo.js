@@ -23,7 +23,7 @@ async function createRepo(repoName, orgName = DEFAULT_ORG, template = DEFAULT_TE
             throw new Error(`No access to organization or personal repositories.`);
         }
 
-        console.log('\n Creating new Unity repository');
+        console.log('\n Creating new repository');
         console.log('Organization:', orgName);
         console.log('Repository:', repoName);
         

@@ -5,7 +5,7 @@ dotenv.config();
 
 const DEFAULT_ORG = process.env.DEFAULT_ORG;
 
-async function deleteUnityRepo(repoName, orgName = DEFAULT_ORG) {
+async function deleteRepo(repoName, orgName = DEFAULT_ORG) {
     const githubManager = new GitHubManager(process.env.GITHUB_TOKEN || '');
 
     try {
@@ -15,7 +15,7 @@ async function deleteUnityRepo(repoName, orgName = DEFAULT_ORG) {
             throw new Error(`No access to organization or personal repositories.`);
         }
 
-        console.log('\n🗑️  Deleting Unity repository');
+        console.log('\n🗑️  Deleting repository');
         console.log('Organization:', orgName);
         console.log('Repository:', repoName);
         console.log('─'.repeat(50));
@@ -51,7 +51,7 @@ if (process.argv[1] === import.meta.url.substring(7)) {
     console.log('\nPress Ctrl+C to cancel, or Enter to continue...');
     
     process.stdin.once('data', () => {
-        deleteUnityRepo(repoName)
+        deleteRepo(repoName)
             .then(() => process.exit(0))
             .catch(error => {
                 console.error('\n❌ Failed to delete repository:', error.message);
@@ -60,4 +60,4 @@ if (process.argv[1] === import.meta.url.substring(7)) {
     });
 }
 
-export { deleteUnityRepo }; 
+export { deleteRepo }; 
